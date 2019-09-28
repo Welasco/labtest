@@ -42,12 +42,10 @@
 
         "addressPrefix": "10.11.0.0/16",
         "subnetName": "DefaultSubnet",
-        "subnetPrefix": "10.11.0.0/24",
+        "subnetPrefix": "10.11.0.0/16",
         "virtualNetworkName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-VNET')]",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
         "networkSecurityGroupName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-NSG')]",
-        "PrivateIP":"10.11.0.",
-        "PrivateIPInitNumb":"10",
         
         "storageAccountName": "[toLower(concat(substring(uniqueString(resourceGroup().id), 0, 4),variables('mainName'),'stg'))]",
         "storageContainerUri": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/', 'vhds/')]",
@@ -61,6 +59,8 @@
         "linuxPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-PublicIP-')]",
         "linuxNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-NIC-')]",
         "linuxDNSNameForPublicIP": "[toLower(variables('linuxServerName'))]",
+        "linuxPrivateIP":"10.11.1.",
+        "linuxPrivateIPInitNumb":"10",        
         "linuxConfiguration": {
             "disablePasswordAuthentication": true,
             "ssh": {
@@ -77,7 +77,9 @@
         "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
         "winPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-PublicIP-')]",
         "winNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-NIC-')]",
-        "winDNSNameForPublicIP": "[toLower(variables('winServerName'))]"
+        "winDNSNameForPublicIP": "[toLower(variables('winServerName'))]",
+        "winPrivateIP":"10.11.0.",
+        "winPrivateIPInitNumb":"10"   
     },
     "resources": [
         {
@@ -283,7 +285,7 @@
                         "name": "ipconfig1",
                         "properties": {
                             "privateIPAllocationMethod": "Static",
-                            "privateIPAddress": "[concat(variables('PrivateIP'),add(add(copyIndex(1),variables('PrivateIPInitNumb')),1))]",
+                            "privateIPAddress": "[concat(variables('linuxPrivateIP'),add(copyIndex(1),variables('linuxPrivateIPInitNumb')))]",
                             "publicIPAddress": {
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('linuxPublicIPAddressName'), copyIndex(1)))]"
                             },
@@ -430,7 +432,7 @@
                         "name": "ipconfig1",
                         "properties": {
                             "privateIPAllocationMethod": "Static",
-                            "privateIPAddress": "[concat(variables('PrivateIP'),add(copyIndex(1),variables('PrivateIPInitNumb')))]",
+                            "privateIPAddress": "[concat(variables('winPrivateIP'),add(copyIndex(1),variables('winPrivateIPInitNumb')))]",
                             "publicIPAddress": {
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('winPublicIPAddressName'), copyIndex(1)))]"
                             },
