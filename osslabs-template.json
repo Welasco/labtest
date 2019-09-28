@@ -46,6 +46,8 @@
         "virtualNetworkName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-VNET')]",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
         "networkSecurityGroupName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-NSG')]",
+        "PrivateIP":"10.11.0.",
+        "PrivateIPInitNumb":"10",
         
         "storageAccountName": "[toLower(concat(substring(uniqueString(resourceGroup().id), 0, 4),variables('mainName'),'stg'))]",
         "storageContainerUri": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/', 'vhds/')]",
@@ -71,7 +73,6 @@
             }
         },
 
-        "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
         "winAdminPassword": "[parameters('winAdminPassword')]",
         "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
         "winPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-PublicIP-')]",
@@ -281,7 +282,8 @@
                     {
                         "name": "ipconfig1",
                         "properties": {
-                            "privateIPAllocationMethod": "Dynamic",
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[concat(variables('PrivateIP'),add(add(copyIndex(1),variables('PrivateIPInitNumb')),1))]",
                             "publicIPAddress": {
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('linuxPublicIPAddressName'), copyIndex(1)))]"
                             },
@@ -390,7 +392,153 @@
                 },
                 "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines/',concat(variables('linuxServerName'),copyIndex(1)))]"
             }
-        }
+        },
+
+
+        {
+            "apiVersion": "2017-06-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[concat(variables('winPublicIPAddressName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "publicIPLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[replace(concat('lab',variables('winDNSNameForPublicIP'),copyIndex(1)),'-', '')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-04-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(variables('winNicName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "nicLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('winPublicIPAddressName'),copyIndex(1))]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[concat(variables('PrivateIP'),add(copyIndex(1),variables('PrivateIPInitNumb')))]",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('winPublicIPAddressName'), copyIndex(1)))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2018-04-01",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[concat(variables('winServerName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "vmLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('winNicName'), copyIndex(1))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B4ms"
+                },
+                "osProfile": {
+                    "computerName": "[concat(variables('winServerName'),copyIndex(1))]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "adminPassword": "[variables('winAdminPassword')]"                   
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "vhd":{
+                            "uri": "[concat(variables('storageContainerUri'), variables('winServerName'), copyIndex(1), '.vhd')]"
+                        },
+                        "name": "[concat(variables('winServerName'), copyIndex(1))]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('winNicName'),copyIndex(1)))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('winServerName'),copyIndex(1),'/installcustomscript')]",
+            "apiVersion": "2017-03-30",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "vmLoopScriptExtension",
+                "count": "[variables('ServersAmount')]"
+            },            
+            "dependsOn": [
+              "[concat('Microsoft.Compute/virtualMachines/', concat(variables('winServerName'),copyIndex(1)))]"
+            ],
+            "properties": {
+              "publisher": "Microsoft.Compute",
+              "type": "CustomScriptExtension",
+              "typeHandlerVersion": "1.8",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": [
+                  "https://raw.githubusercontent.com/Welasco/labtest/master/./psscript.ps1"
+                ],
+                "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', '.', '/', 'psscript.ps1')]"
+              }
+            }
+        },
+        {
+            "apiVersion": "2016-05-15",
+            "type": "Microsoft.DevTestLab/schedules",
+            "name": "[concat('shutdown-computevm-',variables('winServerName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "schedulesLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1))]"
+            ],
+            "properties":{
+                "status": "Enabled",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "1900"
+                },
+                "timeZoneId": "Central Standard Time",
+                "notificationSettings": {
+                    "status": "Disabled",
+                    "timeInMinutes": 30
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines/',concat(variables('winServerName'),copyIndex(1)))]"
+            }
+        }        
     ],
     "outputs": {
     }
