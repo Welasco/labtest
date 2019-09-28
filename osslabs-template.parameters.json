@@ -1,0 +1,19 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "SrvAmount": {
+            "value": 2
+        },
+        "adminUsername": {
+            "value": "victor"
+        },
+        "adminPassword": {
+            "value": "NoP@ssw0rd!"
+        },
+        "authenticationType": {
+            "value": "password"
+        }        
+
+   }
+}

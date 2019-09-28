@@ -1,0 +1,397 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "SrvAmount": {
+            "type": "int",
+            "metadata": {
+                "description": "Number of environments to be deployed"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Admin user name. It will be the same for Windows and Linux."
+            }            
+        },
+        "linuxAdminPassword": {
+            "type": "securestring"
+        },
+        "linuxAuthenticationType": {
+            "type": "string",
+            "defaultValue": "sshPublicKey",
+            "allowedValues": [
+              "sshPublicKey",
+              "password"
+            ],
+            "metadata": {
+              "description": "Type of authentication used for Linux VM. SSH key is recommended."
+            }
+        },
+        "winAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Windows VM Password. It musts be a complex password"
+            }             
+        }
+    },
+    "variables": {
+        "_location": "[resourceGroup().location]",
+        "rsgUniqueStr": "[concat(substring(uniqueString(resourceGroup().id), 0, 4),'-')]",
+        "mainName": "OSSLab",
+
+        "addressPrefix": "10.11.0.0/16",
+        "subnetName": "DefaultSubnet",
+        "subnetPrefix": "10.11.0.0/24",
+        "virtualNetworkName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-VNET')]",
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+        "networkSecurityGroupName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-NSG')]",
+        
+        "storageAccountName": "[toLower(concat(substring(uniqueString(resourceGroup().id), 0, 4),variables('mainName'),'stg'))]",
+        "storageContainerUri": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/', 'vhds/')]",
+
+        "ServersAmount": "[parameters('SrvAmount')]",
+        "adminUsername": "[parameters('adminUsername')]",
+
+        "linuxAdminPassword": "[parameters('linuxAdminPassword')]",
+        "linuxAuthenticationType": "[parameters('linuxAuthenticationType')]",        
+        "linuxServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-')]",
+        "linuxPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-PublicIP-')]",
+        "linuxNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-NIC-')]",
+        "linuxDNSNameForPublicIP": "[toLower(variables('linuxServerName'))]",
+        "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+                "publicKeys": [
+                    {
+                        "path": "[concat('/home/', variables('adminUsername'), '/.ssh/authorized_keys')]",
+                        "keyData": "[variables('linuxAdminPassword')]"
+                    }
+                ]
+            }
+        },
+
+        "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
+        "winAdminPassword": "[parameters('winAdminPassword')]",
+        "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
+        "winPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-PublicIP-')]",
+        "winNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-NIC-')]",
+        "winDNSNameForPublicIP": "[toLower(variables('winServerName'))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[variables('_location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "HTTP",
+                        "properties": {
+                            "description": "Http",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "80",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "HTTPS",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 120,
+                            "direction": "Inbound"
+                        }
+                    },
+                        {
+                        "name": "SSH",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 140,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "NodeJSApp",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3000",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 150,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "JavaApp",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "8080",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 160,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "Port_2222",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "2222",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 170,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "PythonApp",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5000",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 180,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "PHPApp",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "8088",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 190,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "DockerContaier",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "8090",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
+                            "direction": "Inbound"
+                        }
+                    }                           
+                ]
+            }
+        },        
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[variables('_location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+            ],        
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2018-07-01",
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[variables('_location')]",
+            "properties": {},
+            "kind": "Storage",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "tags": {}
+        },
+        
+        {
+            "apiVersion": "2017-06-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[concat(variables('linuxPublicIPAddressName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "publicIPLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[replace(concat('lab',variables('linuxDNSNameForPublicIP'),copyIndex(1)),'-', '')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-04-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(variables('linuxNicName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "nicLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('linuxPublicIPAddressName'),copyIndex(1))]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('linuxPublicIPAddressName'), copyIndex(1)))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2018-04-01",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[concat(variables('linuxServerName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "vmLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('linuxNicName'), copyIndex(1))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B4ms"
+                },
+                "osProfile": {
+                    "computerName": "[concat(variables('linuxServerName'),copyIndex(1))]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "adminPassword": "[variables('linuxAdminPassword')]",
+                    "linuxConfiguration": "[if(equals(variables('linuxAuthenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"                       
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "vhd":{
+                            "uri": "[concat(variables('storageContainerUri'), variables('linuxServerName'), copyIndex(1), '.vhd')]"
+                        },
+                        "name": "[concat(variables('linuxServerName'), copyIndex(1))]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('linuxNicName'),copyIndex(1)))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('linuxServerName'),copyIndex(1),'/installcustomscript')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "vmLoopScriptExtension",
+                "count": "[variables('ServersAmount')]"
+            },            
+            "dependsOn": [
+              "[concat('Microsoft.Compute/virtualMachines/', concat(variables('linuxServerName'),copyIndex(1)))]"
+            ],
+            "properties": {
+              "publisher": "Microsoft.Azure.Extensions",
+              "type": "CustomScript",
+              "typeHandlerVersion": "2.0",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": [
+                  "https://raw.githubusercontent.com/Welasco/labtest/master/./script.sh"
+                ],
+                "commandToExecute": "[concat('sh script.sh ',variables('adminUsername'))]"
+              }
+            }
+        },
+        {
+            "apiVersion": "2016-05-15",
+            "type": "Microsoft.DevTestLab/schedules",
+            "name": "[concat('shutdown-computevm-',variables('linuxServerName'),copyIndex(1))]",
+            "location": "[variables('_location')]",
+            "copy": {
+                "name": "schedulesLoop",
+                "count": "[variables('ServersAmount')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1))]"
+            ],
+            "properties":{
+                "status": "Enabled",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "1900"
+                },
+                "timeZoneId": "Central Standard Time",
+                "notificationSettings": {
+                    "status": "Disabled",
+                    "timeInMinutes": 30
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines/',concat(variables('linuxServerName'),copyIndex(1)))]"
+            }
+        }
+    ],
+    "outputs": {
+    }
+  }
