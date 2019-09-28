@@ -60,7 +60,7 @@
         "linuxNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-NIC-')]",
         "linuxDNSNameForPublicIP": "[toLower(variables('linuxServerName'))]",
         "linuxPrivateIP":"10.11.1.",
-        "linuxPrivateIPInitNumb":"10",        
+        "linuxPrivateIPInitNumb":10,        
         "linuxConfiguration": {
             "disablePasswordAuthentication": true,
             "ssh": {
@@ -79,7 +79,7 @@
         "winNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-NIC-')]",
         "winDNSNameForPublicIP": "[toLower(variables('winServerName'))]",
         "winPrivateIP":"10.11.0.",
-        "winPrivateIPInitNumb":"10"   
+        "winPrivateIPInitNumb":10
     },
     "resources": [
         {
