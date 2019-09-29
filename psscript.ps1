@@ -70,7 +70,7 @@ Log("Downloading VSCode from $url to VSCodeSetup.exe")
 Invoke-WebRequest -Uri $url -OutFile ($Downloaddir+"\VSCodeSetup.exe")
 Unblock-File ($Downloaddir+"\VSCodeSetup.exe")
 Log("Installing VSCode Using the command: $Downloaddir\VSCodeSetup.exe /verysilent /suppressmsgboxes /mergetasks=!runcode,addcontextmenufiles,addcontextmenufolders,associatewithfiles,addtopath")
-$VSCodeInstallResult = (Start-Process ($Downloaddir+"\VSCodeSetup.exe") '/verysilent /suppressmsgboxes /mergetasks=!runcode,addcontextmenufiles,addcontextmenufolders,associatewithfiles,addtopath' -Wait -Passthru).ExitCode
+$VSCodeInstallResult = (Start-Process ($Downloaddir+"\VSCodeSetup.exe") '/verysilent /suppressmsgboxes /mergetasks=!runcode,addcontextmenufiles,addcontextmenufolders,associatewithfiles,addtopath,desktopicon,quicklaunchicon' -Wait -Passthru).ExitCode
 if ($VSCodeInstallResult -eq 0) {
     Log("Install VSCode Success")
 }
