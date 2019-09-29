@@ -38,7 +38,7 @@
     "variables": {
         "_location": "[resourceGroup().location]",
         "rsgUniqueStr": "[concat(substring(uniqueString(resourceGroup().id), 0, 4),'-')]",
-        "mainName": "OSSLab",
+        "mainName": "OSS",
 
         "addressPrefix": "10.11.0.0/16",
         "subnetName": "DefaultSubnet",
@@ -511,7 +511,7 @@
                 "fileUris": [
                   "https://raw.githubusercontent.com/Welasco/labtest/master/./psscript.ps1"
                 ],
-                "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', '.', '/', 'psscript.ps1')]"
+                "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', '.', '/', 'psscript.ps1', ' -VMLinuxPrivateIP ',concat(variables('linuxPrivateIP'),add(copyIndex(1),variables('winPrivateIPInitNumb'))))]"
               }
             }
         },

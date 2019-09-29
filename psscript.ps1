@@ -1,5 +1,5 @@
 param (
-    [string]$InputParameters
+    [string]$VMLinuxPrivateIP
 )
 
 # Creating InstallDir
@@ -13,6 +13,33 @@ Start-Transcript ($Downloaddir+".\InstallPSScript.log")
 function Log($Message){
     Write-Output (([System.DateTime]::Now).ToString() + " " + $Message)
 }
+
+Log("##########################")
+Log("# Adding Host Entry")
+Log("##########################")
+Write-Output "$VMLinuxPrivateIP       contoso.com" >> C:\Windows\system32\drivers\etc\hosts
+Write-Output "$VMLinuxPrivateIP       www.contoso.com" >> C:\Windows\system32\drivers\etc\hosts
+Get-Content C:\Windows\system32\drivers\etc\hosts
+
+Log("##########################")
+Log("# Downloading Source Code Apps")
+Log("##########################")
+Invoke-WebRequest -Uri https://github.com/Welasco/labtest/raw/master/oss-labs.zip -OutFile ($Downloaddir+"\oss-labs.zip")
+#Add-Type -AssemblyName System.IO.Compression.FileSystem
+# function Unzip
+# {
+#     param([string]$zipfile, [string]$outpath)
+#     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
+# }
+# Unzip ($Downloaddir+"\oss-labs.zip") $Downloaddir
+Log("Extracting source Code Files")
+Expand-Archive -Path ($Downloaddir+"\oss-labs.zip") -DestinationPath $Downloaddir
+Log("Cleaning...")
+Remove-Item ($Downloaddir+"\oss-labs\VMTemplate") -Recurse -Confirm:$False
+Remove-Item ($Downloaddir+"\oss-labs\StaticDesign") -Recurse -Confirm:$False
+Remove-Item ($Downloaddir+"\oss-lab\.gitignores")  -Confirm:$False
+Remove-Item ($Downloaddir+"\oss-labs\README.md") -Recurse -Confirm:$False
+Remove-Item ($Downloaddir+"\oss-labs\.vscode") -Recurse -Confirm:$False
 
 Log("##########################")
 Log("# Installing VSCode")
