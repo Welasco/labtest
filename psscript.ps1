@@ -28,7 +28,8 @@ function Add-SystemPaths([array] $PathsToAdd) {
     if ($VerifiedPathsToAdd -ne "") {
         Log("Adding paths: $VerifiedPathsToAdd")
         [System.Environment]::SetEnvironmentVariable("PATH", $Env:Path + "$VerifiedPathsToAdd","Machine")
-        Log("Note: The new path does NOT take immediately in running processes. Only new processes will see new path.")
+        Log("Note: Reloading Path env to the current script")
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     }
 }
 
@@ -76,17 +77,17 @@ if ($VSCodeInstallResult -eq 0) {
 Log("Installing VSCode Extensions")
 $VSCodeInstallPath = "C:\Program Files\Microsoft VS Code\bin"
 cd $VSCodeInstallPath
-./code --install-extension ms-vscode.powershell -force
-./code --install-extension ms-azuretools.vscode-docker -force
-./code --install-extension ms-vscode.csharp -force
-./code --install-extension ms-python.python -force
-./code --install-extension vscode-icons-team.vscode-icons -force
-./code --install-extension visualstudioexptteam.vscodeintellicode -force
-./code --install-extension vscjava.vscode-maven -force
-./code --install-extension vscjava.vscode-spring-boot-dashboard -force
-./code --install-extension pivotal.vscode-spring-boot -force
-./code --install-extension vscjava.vscode-spring-initializr -force
-./code --install-extension vscjava.vscode-java-debug -force
+.\code --install-extension ms-vscode.powershell -force
+.\code --install-extension ms-azuretools.vscode-docker -force
+.\code --install-extension ms-vscode.csharp -force
+.\code --install-extension ms-python.python -force
+.\code --install-extension vscode-icons-team.vscode-icons -force
+.\code --install-extension visualstudioexptteam.vscodeintellicode -force
+.\code --install-extension vscjava.vscode-maven -force
+.\code --install-extension vscjava.vscode-spring-boot-dashboard -force
+.\code --install-extension pivotal.vscode-spring-boot -force
+.\code --install-extension vscjava.vscode-spring-initializr -force
+.\code --install-extension vscjava.vscode-java-debug -force
 cd $Downloaddir
 
 Log("##########################")
@@ -164,14 +165,17 @@ Unblock-File ($Downloaddir+"\nssm.exe")
 Log("Adding NodeJSApp Service")
 .\nssm.exe install NodeJSApp 'C:\Program Files\nodejs\node.exe' C:\InstallDir\apps\NodeJSApp\bin\www
 .\nssm.exe set NodeJSApp AppDirectory C:\InstallDir\apps\NodeJSApp
+Start-Service NodeJSApp
 
 Log("Adding PythonApp Service")
 .\nssm.exe install PythonApp 'C:\Program Files\Python37\python.exe' C:\InstallDir\apps\PythonApp\app.py
 .\nssm.exe set PythonApp AppDirectory C:\InstallDir\apps\PythonApp
+Start-Service PythonApp
 
 Log("Adding JavaApp Service")
 .\nssm.exe install JavaApp 'C:\Program Files\Java\jre1.8.0_221\bin\java.exe' -jar C:\InstallDir\apps\JavaApp\javaapp.jar
 .\nssm.exe set JavaApp AppDirectory C:\InstallDir\apps\JavaApp
+Start-Service JavaApp
 
 Log("##########################")
 Log("# Setting Windows Features")
