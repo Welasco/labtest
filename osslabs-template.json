@@ -55,7 +55,7 @@
 
         "linuxAdminPassword": "[parameters('linuxAdminPassword')]",
         "linuxAuthenticationType": "[parameters('linuxAuthenticationType')]",        
-        "linuxServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-')]",
+        "linuxServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM')]",
         "linuxPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-PublicIP-')]",
         "linuxNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-LinuxVM-NIC-')]",
         "linuxDNSNameForPublicIP": "[toLower(variables('linuxServerName'))]",
@@ -74,7 +74,7 @@
         },
 
         "winAdminPassword": "[parameters('winAdminPassword')]",
-        "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-')]",
+        "winServerName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM')]",
         "winPublicIPAddressName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-PublicIP-')]",
         "winNicName": "[concat(variables('rsgUniqueStr'),variables('mainName'),'-WinVM-NIC-')]",
         "winDNSNameForPublicIP": "[toLower(variables('winServerName'))]",
