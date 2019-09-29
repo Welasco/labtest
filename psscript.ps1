@@ -14,6 +14,24 @@ Start-Transcript ($Downloaddir+".\InstallPSScript.log")
 function Log($Message){
     Write-Output (([System.DateTime]::Now).ToString() + " " + $Message)
 }
+
+function Add-SystemPaths([array] $PathsToAdd) {
+    $VerifiedPathsToAdd = ""
+    foreach ($Path in $PathsToAdd) {
+        if ($Env:Path -like "*$Path*") {
+            Log("  Path to $Path already added")
+        }
+        else {
+            $VerifiedPathsToAdd += ";$Path";Log("  Path to $Path needs to be added")
+        }
+    }
+    if ($VerifiedPathsToAdd -ne "") {
+        Log("Adding paths: $VerifiedPathsToAdd")
+        [System.Environment]::SetEnvironmentVariable("PATH", $Env:Path + "$VerifiedPathsToAdd","Machine")
+        Log("Note: The new path does NOT take immediately in running processes. Only new processes will see new path.")
+    }
+}
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Log("##########################")
@@ -90,6 +108,7 @@ $NodeJSInstallResult = (Start-Process "msiexec.exe" '/i node-v10.16.3-x64.msi /q
 if ($NodeJSInstallResult -eq 0) {
     Log("Install Python Success")
 }
+Add-SystemPaths "C:\Program Files\nodejs"
 
 Log("##########################")
 Log("# Installing Python")
@@ -100,33 +119,19 @@ $PythonInstallResult = (Start-Process ($Downloaddir+"\python-3.7.4-amd64.exe") '
 if ($PythonInstallResult -eq 0) {
     Log("Install Python Success")
 }
+Add-SystemPaths "C:\Program Files\Python37"
+Add-SystemPaths "C:\Program Files\Python37\Scripts"
 
 Log("##########################")
 Log("# Installing Java JRE")
 Log("##########################")
-Invoke-WebRequest -Uri https://javadl.oracle.com/webapps/download/AutoDL?BundleId=239858_230deb18db3e4014bb8e3e8324f81b43exp -OutFile ($Downloaddir+"\jre-8u221-windows-x64.exe")
+Invoke-WebRequest https://github.com/Welasco/labtest/raw/master/jre-8u221-windows-x64.exe -OutFile ($Downloaddir+"\jre-8u221-windows-x64.exe")
 Unblock-File ($Downloaddir+"\jre-8u221-windows-x64.exe")
 $JavaInstallResult = (Start-Process ($Downloaddir+"\jre-8u221-windows-x64.exe") '/s' -Wait -Passthru).ExitCode
 if ($JavaInstallResult -eq 0) {
     Log("Install Java JRE Success")
 }
-function AddSystemPaths([array] $PathsToAdd) {
-    $VerifiedPathsToAdd = ""
-    foreach ($Path in $PathsToAdd) {
-        if ($Env:Path -like "*$Path*") {
-            Log("  Path to $Path already added")
-        }
-        else {
-            $VerifiedPathsToAdd += ";$Path";Log("  Path to $Path needs to be added")
-        }
-    }
-    if ($VerifiedPathsToAdd -ne "") {
-        Log("Adding paths: $VerifiedPathsToAdd")
-        [System.Environment]::SetEnvironmentVariable("PATH", $Env:Path + "$VerifiedPathsToAdd","Machine")
-        Log("Note: The new path does NOT take immediately in running processes. Only new processes will see new path.")
-    }
-}
-AddSystemPaths "C:\Program Files\Java\jdk-13\bin"
+Add-SystemPaths "C:\Program Files\Java\jre1.8.0_221\bin"
 
 
 Log("##########################")
@@ -165,7 +170,7 @@ Log("Adding PythonApp Service")
 .\nssm.exe set PythonApp AppDirectory C:\InstallDir\apps\PythonApp
 
 Log("Adding JavaApp Service")
-.\nssm.exe install JavaApp 'C:\Program Files\Java\jdk-13\bin\java.exe' -jar C:\InstallDir\apps\JavaApp\javaapp.jar
+.\nssm.exe install JavaApp 'C:\Program Files\Java\jre1.8.0_221\bin\java.exe' -jar C:\InstallDir\apps\JavaApp\javaapp.jar
 .\nssm.exe set JavaApp AppDirectory C:\InstallDir\apps\JavaApp
 
 Log("##########################")
