@@ -167,6 +167,8 @@ sudo systemctl reload apache2
 sudo cp -rR /opt/apps/PHPApp/. /var/www/contoso.com/
 sudo service apache2 restart
 echo " " >> $logpath
+sudo cp -rR /opt/apps/MainApp/. /var/www/html/
+
 
 #############################
 # Loading App Services Daemon

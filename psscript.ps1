@@ -134,6 +134,55 @@ if ($JavaInstallResult -eq 0) {
 }
 Add-SystemPaths "C:\Program Files\Java\jre1.8.0_221\bin"
 
+Log("##########################")
+Log("# Installing IIS and PHP")
+Log("##########################")
+Log("Installing IIS")
+Enable-WindowsOptionalFeature –online –featurename IIS-WebServerRole
+Enable-WindowsOptionalFeature -Online -FeatureName IIS-CGI
+
+#Creating PHP installation folder
+New-Item -Path "C:\Program Files" -Name "PHP" -ItemType "directory"
+
+Log("Downloading php and unzipping in C:\Program Files")
+$php_dir="C:\Program Files\PHP"
+$phpURL="https://windows.php.net/downloads/releases/php-7.3.10-nts-Win32-VC15-x86.zip"
+$phpzip= ($Downloaddir+"\php-download.zip")
+Invoke-WebRequest -Uri $phpURL -OutFile $phpzip
+Expand-Archive -LiteralPath $phpzip -DestinationPath $php_dir
+Add-SystemPaths "C:\Program Files\PHP"
+#Remove-Item $phpzip
+
+Log("Downloading and installing Visual C++ for PHP")
+$vcURL="https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe"
+$vc_exe=($Downloaddir+"\vc.exe")
+Invoke-WebRequest -Uri $vcURL -OutFile $vc_exe
+$vcInstallResult = (Start-Process $vc_exe '/s' -Wait -Passthru).ExitCode
+if ($vcInstallResult -eq 0) {
+    Log("Install VC Success")
+}
+
+#Downloading Rewrite 2.1 for web.config
+$rewrite_module="https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi"
+$rewrite_module_msi=($Downloaddir+"\rewrite.msi")
+Invoke-WebRequest -Uri $rewrite_module -OutFile $rewrite_module_msi
+$rewriteInstallResult =  (Start-Process $rewrite_module_msi '/qn' -Wait -Passthru).ExitCode
+if ($rewriteInstallResult -eq 0) {
+    Log("Install VC Success")
+}
+cd 'C:/Program Files/Microsoft/Web Platform Installer'; .\WebpiCmd.exe /Install /Products:'UrlRewrite2' /AcceptEula /OptInMU /SuppressPostFinish
+
+#Creating web app inside IIS and add php/fastcgi handlers.
+New-WebSite -Name PHPApp -Port 8081 -PhysicalPath "C:\InstallDir\apps\PHPApp"
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "unlock config -section:system.webServer/handlers"
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "set config -section:system.webServer/handlers /+`"[name='PHP-FastCGI',path='*.php',verb='GET,HEAD,POST',modules='FastCgiModule',scriptProcessor='C:\PHP\php-cgi.exe',resourceType='Either',requireAccess='Script']`" /commit:apphost"
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/fastCgi /+`"[fullPath='" + $php_dir + "\php-cgi.exe']`" /commit:apphost")
+
+#Restarting IIS
+iisreset
+
+cd $Downloaddir\apps\MainApp
+Copy-Item *.* -Recurse c:\inetpub\wwwroot
 
 Log("##########################")
 Log("# Preparing Code")
@@ -192,3 +241,8 @@ Disable-InternetExplorerESC
 
 Log("Windows Firewall Allow Ping")
 netsh advfirewall firewall add rule name="ICMP Allow incoming V4 echo request" protocol=icmpv4:8,any dir=in action=allow
+netsh advfirewall firewall add rule name="Allow NodeJS App" protocol=TCP dir=in action=allow localport:3000
+netsh advfirewall firewall add rule name="Allow Python App" protocol=TCP dir=in action=allow localport:5000
+netsh advfirewall firewall add rule name="Allow Java App" protocol=TCP dir=in action=allow localport:8080
+netsh advfirewall firewall add rule name="Allow PHP App" protocol=TCP dir=in action=allow localport:8088
+netsh advfirewall firewall add rule name="Allow Mail App" protocol=TCP dir=in action=allow localport:80
