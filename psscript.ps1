@@ -170,19 +170,19 @@ $rewriteInstallResult =  (Start-Process $rewrite_module_msi '/qn' -Wait -Passthr
 if ($rewriteInstallResult -eq 0) {
     Log("Install VC Success")
 }
-cd 'C:/Program Files/Microsoft/Web Platform Installer'; .\WebpiCmd.exe /Install /Products:'UrlRewrite2' /AcceptEula /OptInMU /SuppressPostFinish
+# cd 'C:/Program Files/Microsoft/Web Platform Installer'; .\WebpiCmd.exe /Install /Products:'UrlRewrite2' /AcceptEula /OptInMU /SuppressPostFinish
 
 #Creating web app inside IIS and add php/fastcgi handlers.
-New-WebSite -Name PHPApp -Port 8081 -PhysicalPath "C:\InstallDir\apps\PHPApp"
+New-WebSite -Name PHPApp -Port 8088 -PhysicalPath "C:\InstallDir\apps\PHPApp"
 Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "unlock config -section:system.webServer/handlers"
-Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "set config -section:system.webServer/handlers /+`"[name='PHP-FastCGI',path='*.php',verb='GET,HEAD,POST',modules='FastCgiModule',scriptProcessor='C:\PHP\php-cgi.exe',resourceType='Either',requireAccess='Script']`" /commit:apphost"
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/handlers /+`"[name='PHP-FastCGI',path='*.php',verb='GET,HEAD,POST',modules='FastCgiModule',scriptProcessor='" + $php_dir + "\php-cgi.exe',resourceType='Either',requireAccess='Script']`" /commit:apphost")
 Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/fastCgi /+`"[fullPath='" + $php_dir + "\php-cgi.exe']`" /commit:apphost")
 
 #Restarting IIS
 iisreset
 
 cd $Downloaddir\apps\MainApp
-Copy-Item *.* -Recurse c:\inetpub\wwwroot
+Copy-Item * C:\inetpub\wwwroot\ -Recurse
 
 Log("##########################")
 Log("# Preparing Code")
@@ -241,8 +241,8 @@ Disable-InternetExplorerESC
 
 Log("Windows Firewall Allow Ping")
 netsh advfirewall firewall add rule name="ICMP Allow incoming V4 echo request" protocol=icmpv4:8,any dir=in action=allow
-netsh advfirewall firewall add rule name="Allow NodeJS App" protocol=TCP dir=in action=allow localport:3000
-netsh advfirewall firewall add rule name="Allow Python App" protocol=TCP dir=in action=allow localport:5000
-netsh advfirewall firewall add rule name="Allow Java App" protocol=TCP dir=in action=allow localport:8080
-netsh advfirewall firewall add rule name="Allow PHP App" protocol=TCP dir=in action=allow localport:8088
-netsh advfirewall firewall add rule name="Allow Mail App" protocol=TCP dir=in action=allow localport:80
+netsh advfirewall firewall add rule name="Allow NodeJS App" protocol=TCP dir=in action=allow localport=3000
+netsh advfirewall firewall add rule name="Allow Python App" protocol=TCP dir=in action=allow localport=5000
+netsh advfirewall firewall add rule name="Allow Java App" protocol=TCP dir=in action=allow localport=8080
+netsh advfirewall firewall add rule name="Allow PHP App" protocol=TCP dir=in action=allow localport=8088
+netsh advfirewall firewall add rule name="Allow Mail App" protocol=TCP dir=in action=allow localport=80
