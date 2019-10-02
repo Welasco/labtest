@@ -174,9 +174,9 @@ if ($rewriteInstallResult -eq 0) {
 
 #Creating web app inside IIS and add php/fastcgi handlers.
 New-WebSite -Name PHPApp -Port 8088 -PhysicalPath "C:\InstallDir\apps\PHPApp"
-Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "unlock config -section:system.webServer/handlers"
-Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/handlers /+`"[name='PHP-FastCGI',path='*.php',verb='GET,HEAD,POST',modules='FastCgiModule',scriptProcessor='" + $php_dir + "\php-cgi.exe',resourceType='Either',requireAccess='Script']`" /commit:apphost")
-Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/fastCgi /+`"[fullPath='" + $php_dir + "\php-cgi.exe']`" /commit:apphost")
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList "unlock config -section:system.webServer/handlers" -Wait -Passthru
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/handlers /+`"[name='PHP-FastCGI',path='*.php',verb='GET,HEAD,POST',modules='FastCgiModule',scriptProcessor='" + $php_dir + "\php-cgi.exe',resourceType='Either',requireAccess='Script']`" /commit:apphost") -Wait -Passthru
+Start-Process -FilePath "C:\Windows\System32\inetsrv\appcmd.exe" -ArgumentList ("set config -section:system.webServer/fastCgi /+`"[fullPath='" + $php_dir + "\php-cgi.exe']`" /commit:apphost") -Wait -Passthru
 
 #Restarting IIS
 iisreset
