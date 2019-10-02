@@ -138,7 +138,7 @@ Log("##########################")
 Log("# Installing IIS and PHP")
 Log("##########################")
 Log("Installing IIS")
-Enable-WindowsOptionalFeature –online –featurename IIS-WebServerRole
+Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole
 Enable-WindowsOptionalFeature -Online -FeatureName IIS-CGI
 
 #Creating PHP installation folder
