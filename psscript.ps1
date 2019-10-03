@@ -124,15 +124,16 @@ Add-SystemPaths "C:\Program Files\Python37"
 Add-SystemPaths "C:\Program Files\Python37\Scripts"
 
 Log("##########################")
-Log("# Installing Java JRE")
+Log("# Installing Java Zulu JRE")
 Log("##########################")
-Invoke-WebRequest https://github.com/Welasco/labtest/raw/master/jre-8u221-windows-x64.exe -OutFile ($Downloaddir+"\jre-8u221-windows-x64.exe")
-Unblock-File ($Downloaddir+"\jre-8u221-windows-x64.exe")
-$JavaInstallResult = (Start-Process ($Downloaddir+"\jre-8u221-windows-x64.exe") '/s' -Wait -Passthru).ExitCode
+#Invoke-WebRequest https://github.com/Welasco/labtest/raw/master/jre-8u221-windows-x64.exe -OutFile ($Downloaddir+"\jre-8u221-windows-x64.exe")
+Invoke-WebRequest http://repos.azul.com/azure-only/zulu/packages/zulu-13/13/zulu-13-azure-jdk_13.27.9-13-win_x64.msi -OutFile ($Downloaddir+"\zulu-13-azure-jdk_13.27.9-13-win_x64.msi")
+Unblock-File ($Downloaddir+"\zulu-13-azure-jdk_13.27.9-13-win_x64.msi")
+$JavaInstallResult = (Start-Process ($Downloaddir+"\zulu-13-azure-jdk_13.27.9-13-win_x64.msi") '/qn' -Wait -Passthru).ExitCode
 if ($JavaInstallResult -eq 0) {
-    Log("Install Java JRE Success")
+    Log("Install Java Zulu JRE Success")
 }
-Add-SystemPaths "C:\Program Files\Java\jre1.8.0_221\bin"
+Add-SystemPaths "C:\Program Files\Zulu\zulu-13-jre\bin"
 
 Log("##########################")
 Log("# Installing IIS and PHP")
@@ -222,7 +223,7 @@ Log("Adding PythonApp Service")
 Start-Service PythonApp
 
 Log("Adding JavaApp Service")
-.\nssm.exe install JavaApp 'C:\Program Files\Java\jre1.8.0_221\bin\java.exe' -jar C:\InstallDir\apps\JavaApp\javaapp.jar
+.\nssm.exe install JavaApp 'C:\Program Files\Zulu\zulu-13-jre\bin' -jar C:\InstallDir\apps\JavaApp\javaapp.jar
 .\nssm.exe set JavaApp AppDirectory C:\InstallDir\apps\JavaApp
 Start-Service JavaApp
 
