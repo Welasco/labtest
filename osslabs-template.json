@@ -392,7 +392,8 @@
                 "count": "[variables('ServersAmount')]"
             },
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1))]"
+                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1))]",
+                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1),'/extensions/installcustomscript')]"
             ],
             "properties":{
                 "status": "Enabled",
@@ -400,7 +401,7 @@
                 "dailyRecurrence": {
                     "time": "1900"
                 },
-                "timeZoneId": "Central Standard Time",
+                "timeZoneId": "Pacific Standard Time",
                 "notificationSettings": {
                     "status": "Disabled",
                     "timeInMinutes": 30
@@ -538,7 +539,8 @@
                 "count": "[variables('ServersAmount')]"
             },
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1))]"
+                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1))]",
+                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1),'/extensions/installcustomscript')]"
             ],
             "properties":{
                 "status": "Enabled",
@@ -546,7 +548,7 @@
                 "dailyRecurrence": {
                     "time": "1900"
                 },
-                "timeZoneId": "Central Standard Time",
+                "timeZoneId": "Pacific Standard Time",
                 "notificationSettings": {
                     "status": "Disabled",
                     "timeInMinutes": 30
