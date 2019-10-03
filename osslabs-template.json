@@ -382,33 +382,6 @@
               }
             }
         },
-        {
-            "apiVersion": "2016-05-15",
-            "type": "Microsoft.DevTestLab/schedules",
-            "name": "[concat('shutdown-computevm-',variables('linuxServerName'),copyIndex(1))]",
-            "location": "[variables('_location')]",
-            "copy": {
-                "name": "schedulesLoop",
-                "count": "[variables('ServersAmount')]"
-            },
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1))]",
-                "[concat('Microsoft.Compute/virtualMachines/',variables('linuxServerName'),copyIndex(1),'/extensions/installcustomscript')]"
-            ],
-            "properties":{
-                "status": "Enabled",
-                "taskType": "ComputeVmShutdownTask",
-                "dailyRecurrence": {
-                    "time": "1900"
-                },
-                "timeZoneId": "Pacific Standard Time",
-                "notificationSettings": {
-                    "status": "Disabled",
-                    "timeInMinutes": 30
-                },
-                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines/',concat(variables('linuxServerName'),copyIndex(1)))]"
-            }
-        },
 
 
         {
@@ -528,34 +501,7 @@
                 "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', '.', '/', 'psscript.ps1', ' -VMLinuxPrivateIP ',concat(variables('linuxPrivateIP'),add(copyIndex(1),variables('winPrivateIPInitNumb'))))]"
               }
             }
-        },
-        {
-            "apiVersion": "2016-05-15",
-            "type": "Microsoft.DevTestLab/schedules",
-            "name": "[concat('shutdown-computevm-',variables('winServerName'),copyIndex(1))]",
-            "location": "[variables('_location')]",
-            "copy": {
-                "name": "schedulesLoop",
-                "count": "[variables('ServersAmount')]"
-            },
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1))]",
-                "[concat('Microsoft.Compute/virtualMachines/',variables('winServerName'),copyIndex(1),'/extensions/installcustomscript')]"
-            ],
-            "properties":{
-                "status": "Enabled",
-                "taskType": "ComputeVmShutdownTask",
-                "dailyRecurrence": {
-                    "time": "1900"
-                },
-                "timeZoneId": "Pacific Standard Time",
-                "notificationSettings": {
-                    "status": "Disabled",
-                    "timeInMinutes": 30
-                },
-                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines/',concat(variables('winServerName'),copyIndex(1)))]"
-            }
-        }        
+        }    
     ],
     "outputs": {
     }
